@@ -1,0 +1,40 @@
+SUIVI RÉCOLTES — VERSION 1.0
+
+Application PWA pour tablette Android, sans abonnement et sans serveur de données.
+Les 271 lignes de l'historique du fichier « suivprod.xlsx » ont été intégrées,
+soit 2 368 041 grammes de 2018 à 2025, répartis entre 33 produits historiques.
+Le nouveau produit « Patate douce » est disponible pour les saisies depuis 2026.
+
+INSTALLATION VIA GITHUB PAGES
+1. Sur votre dépôt GitHub destiné à Suivi Récoltes, placez tous les fichiers
+   de ce dossier à la racine (index.html, app.js, styles.css, history-data.js,
+   sw.js, manifest.webmanifest et les deux icônes dans icons/).
+2. Activez GitHub Pages sur la branche main, dossier / (root).
+3. Ouvrez l'adresse HTTPS de GitHub Pages sur la tablette Android.
+4. Depuis Chrome, menu ⋮ puis « Ajouter à l’écran d’accueil » / « Installer ».
+
+IMPORTANT : ne pas utiliser le dépôt de Ma Cinéthèque !
+Les saisies sont locales à chaque appareil et ne se synchronisent PAS.
+Le téléphone Pixel peut servir à installer / développer mais, pour ne pas
+multiplier des copies divergentes, saisissez les récoltes uniquement sur la tablette.
+
+SAUVEGARDE MANUELLE
+Dans l'application, onglet Sauvegarde :
+- « Partager la sauvegarde (Drive) » : sur Android choisir l'application Drive
+  dans la feuille de partage si elle est disponible.
+- Sinon « Télécharger la sauvegarde JSON », puis déposer le fichier dans Drive.
+- Pour restaurer, télécharger le JSON depuis Drive et choisir le fichier.
+  ATTENTION : restaurer remplace les données locales.
+- Faites une sauvegarde régulière ; toute suppression des données du navigateur
+  peut effacer les récoltes quotidiennes.
+
+STATISTIQUES
+- Historique 2018–2025 conservé au gramme près, en lignes par variété.
+- Regroupement uniquement par produit (toutes les tomates réunies, etc.).
+- Saisie quotidienne à partir du 1er janvier 2026.
+- Plusieurs récoltes du même produit le même jour sont additionnées.
+- Les anciennes pesées ne disposent pas de dates, uniquement de totaux annuels.
+
+COÛT
+Aucun abonnement ni service payant requis. GitHub Pages gratuit dans
+ses conditions d'usage applicables. Pas d'API tierce ni de connexion OAuth.

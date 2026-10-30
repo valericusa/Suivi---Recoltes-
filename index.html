@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#225b43">
+  <meta name="description" content="Suivi quotidien des récoltes, historique et statistiques par produit, sans abonnement.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Suivi Récoltes</title>
+  <script defer src="./history-data.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">🌱</span><div><h1>Suivi Récoltes</h1><p>Votre potager, année après année</p></div></div>
+      <span class="top-pill">Depuis 2018</span>
+    </header>
+    <nav class="nav" aria-label="Sections principales">
+      <button type="button" data-view="saisie" class="nav-btn is-active">✍️ Saisie</button>
+      <button type="button" data-view="journal" class="nav-btn">📅 Journal</button>
+      <button type="button" data-view="stats" class="nav-btn">📊 Statistiques</button>
+      <button type="button" data-view="donnees" class="nav-btn">💾 Sauvegarde</button>
+    </nav>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <main>
+      <section id="view-saisie" class="view">
+        <div class="section-title"><div><div class="eyebrow">ENREGISTREMENT</div><h2>Une récolte en quelques secondes</h2><p>Une ligne par pesée, autant de fois que nécessaire.</p></div></div>
+        <div id="quick-products" class="quick-products" aria-label="Produits favoris"></div>
+        <div class="two-col">
+          <form id="entry-form" class="panel entry-panel">
+            <div class="section-mini">Nouvelle pesée</div>
+            <label for="harvest-date">Date de la récolte</label>
+            <input id="harvest-date" type="date" required>
+            <label for="harvest-product">Produit</label>
+            <select id="harvest-product" required></select>
+            <div class="split-label"><label for="harvest-weight">Quantité</label><span>Virgule acceptée</span></div>
+            <div class="weight-line"><input id="harvest-weight" type="text" inputmode="decimal" autocomplete="off" placeholder="Ex. 350" required><select id="harvest-unit" aria-label="Unité"><option value="g">grammes</option><option value="kg">kilogrammes</option></select></div>
+            <button id="submit-entry" type="submit" class="button-primary">+ Ajouter la récolte</button>
+            <button id="cancel-edit" type="button" class="button-link" hidden>Annuler la modification</button>
+            <p class="footnote">La date et le produit restent sélectionnés après chaque ajout.</p>
+          </form>
+          <aside class="panel today-panel"><div class="section-mini" id="daily-title">Récoltes du jour</div><div id="daily-summary" class="daily-summary"></div><div id="daily-entries"></div></aside>
+        </div>
+      </section>
+      <section id="view-journal" class="view" hidden>
+        <div class="section-title"><div><div class="eyebrow">HISTORIQUE QUOTIDIEN</div><h2>Journal des récoltes</h2><p>Retrouvez, corrigez ou supprimez une pesée.</p></div></div>
+        <div class="panel"><div class="filters"><div><label for="journal-year">Année</label><select id="journal-year"></select></div><div><label for="journal-product">Produit</label><select id="journal-product"></select></div></div><div id="journal-summary"></div><div id="journal-list"></div></div>
+      </section>
+      <section id="view-stats" class="view" hidden>
+        <div class="section-title"><div><div class="eyebrow">BILAN AUTOMATIQUE</div><h2>Statistiques par produit</h2><p>Toutes les variétés d’un même produit sont additionnées.</p></div></div>
+        <div class="filters stats-filters"><div><label for="stats-year">Année à examiner</label><select id="stats-year"></select></div><div><label for="stats-product">Évolution d'un produit</label><select id="stats-product"></select></div></div>
+        <div id="stats-cards" class="metric-grid"></div>
+        <div class="two-col stat-grid"><div class="panel"><h3 id="chart-title">Évolution</h3><div id="chart" class="chart"></div></div><div class="panel"><h3>Récoltes de l'année</h3><div id="annual-table"></div></div></div>
+        <div class="panel"><h3>Production totale, année par année</h3><div id="yearly-totals"></div></div>
+        <p class="footnote">2018–2025 : totaux issus du fichier Excel (pesées détaillées non datées). Dès 2026 : somme des pesées quotidiennes.</p>
+      </section>
+      <section id="view-donnees" class="view" hidden>
+        <div class="section-title"><div><div class="eyebrow">VOS DONNÉES</div><h2>Sauvegarde manuelle</h2><p>Aucun compte, aucune connexion automatique à Google Drive.</p></div></div>
+        <div class="two-col">
+          <div class="panel"><h3>1. Mettre une copie sur Drive</h3><p>Le fichier de sauvegarde contient les récoltes quotidiennes, le catalogue des produits et tout l'historique depuis 2018.</p><button id="share-backup" class="button-primary" type="button">📤 Partager la sauvegarde (Drive)</button><button id="download-backup" class="button-secondary" type="button">⬇️ Télécharger la sauvegarde JSON</button><p class="footnote">Sur Android, choisissez <strong>Drive</strong> dans le menu de partage. Si Drive n'apparaît pas, téléchargez le JSON et importez-le dans Drive manuellement.</p></div>
+          <div class="panel"><h3>2. Restaurer depuis une copie</h3><p>Récupérez un fichier JSON depuis Drive, puis sélectionnez-le ici.</p><label for="restore-file" class="file-label">📥 Choisir une sauvegarde JSON</label><input id="restore-file" type="file" accept=".json,application/json"><p class="warning">Attention : la restauration <strong>remplace</strong> les saisies présentes sur cet appareil. Sauvegardez-les d'abord.</p></div>
+        </div>
+        <div class="panel"><h3>Produits disponibles</h3><p id="product-count"></p><button id="add-product" class="button-secondary" type="button">+ Ajouter un nouveau produit</button><div id="product-catalog" class="catalog"></div></div>
+        <div class="panel info-panel"><h3>Stockage et sécurité</h3><p>Les saisies sont enregistrées <strong>sur cet appareil</strong> et restent consultables hors connexion une fois l'application installée. Aucune synchronisation automatique n'est effectuée entre le Pixel et la tablette.</p><p>Une réinstallation, l'effacement des données du navigateur ou le changement d'appareil peuvent supprimer les saisies locales : conservez régulièrement un JSON sur Drive. L'application ne demande aucun accès à votre compte Google.</p></div>
+      </section>
+    </main>
+    <footer>Suivi Récoltes · Version 1.0 · Gratuit · Fonctionne hors connexion après installation</footer>
+  </div>
+</body>
+</html>
