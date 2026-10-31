@@ -52,7 +52,23 @@
       </section>
       <section id="view-stats" class="view" hidden>
         <div class="section-title"><div><div class="eyebrow">BILAN AUTOMATIQUE</div><h2>Statistiques par produit</h2><p>Toutes les variétés d’un même produit sont additionnées.</p></div></div>
-        <div class="filters stats-filters"><div><label for="stats-year">Année à examiner</label><select id="stats-year"></select></div><div><label for="stats-product">Évolution d'un produit</label><select id="stats-product"></select></div></div>
+        <div class="filters stats-filters">
+          <div>
+            <label for="stats-year">Année à examiner</label><select id="stats-year"></select>
+            <div class="annual-note">
+              <label for="year-observation" id="observation-title">Observation de l'année</label>
+              <textarea id="year-observation" rows="3" maxlength="2000" placeholder="Ex. : longue canicule, manque d'eau, dégâts dus au vent…"></textarea>
+              <p class="note-help" id="observation-status">Enregistrement automatique · inclus dans la sauvegarde JSON.</p>
+            </div>
+          </div>
+          <div><label for="stats-product">Évolution d'un produit</label><select id="stats-product"></select></div>
+        </div>
+        <div class="panel weekly-panel">
+          <div class="weekly-header"><h3 id="weekly-title">Production par semaine</h3><span id="weekly-year-total" class="weekly-year-total"></span></div>
+          <div id="weekly-chart" class="weekly-chart"></div>
+          <div id="weekly-selection" class="weekly-selection" aria-live="polite"></div>
+          <p class="footnote" id="weekly-help">Une barre représente une semaine, du lundi au dimanche. Seules les récoltes de l’année choisie sont comptées.</p>
+        </div>
         <div id="stats-cards" class="metric-grid"></div>
         <div class="two-col stat-grid"><div class="panel"><h3 id="chart-title">Évolution</h3><div id="chart" class="chart"></div></div><div class="panel"><h3>Récoltes de l'année</h3><div id="annual-table"></div></div></div>
         <div class="panel"><h3>Production totale, année par année</h3><div id="yearly-totals"></div></div>
@@ -68,7 +84,7 @@
         <div class="panel info-panel"><h3>Stockage et sécurité</h3><p>Les saisies sont enregistrées <strong>sur cet appareil</strong> et restent consultables hors connexion une fois l'application installée. Aucune synchronisation automatique n'est effectuée entre le Pixel et la tablette.</p><p>Une réinstallation, l'effacement des données du navigateur ou le changement d'appareil peuvent supprimer les saisies locales : conservez régulièrement un JSON sur Drive. L'application ne demande aucun accès à votre compte Google.</p></div>
       </section>
     </main>
-    <footer>Suivi Récoltes · Version 1.0 · Gratuit · Fonctionne hors connexion après installation</footer>
+    <footer>Suivi Récoltes · Version 1.2 · Gratuit · Fonctionne hors connexion après installation</footer>
   </div>
 </body>
 </html>

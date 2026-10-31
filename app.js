@@ -12,23 +12,28 @@
   let state;
   let editingId = null;
   let activeView = 'saisie';
+  let selectedWeek = null;
+  const WEEK_MS = 7 * 86400000;
 
   function isValidState(data){
     return data && data.app === 'suivi-recoltes' && data.format === 1 &&
       Array.isArray(data.archive) && Array.isArray(data.entries) && Array.isArray(data.products) &&
       data.archive.every(r => Number.isInteger(r.year) && r.year >= 2018 && r.year < 2200 && typeof r.product === 'string' && Number.isSafeInteger(r.grams) && r.grams >= 0) &&
       data.entries.every(r => typeof r.id === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.date) && typeof r.product === 'string' && Number.isSafeInteger(r.grams) && r.grams > 0) &&
-      data.products.every(p => typeof p.id === 'string' && p.id.length < 100 && typeof p.label === 'string' && p.label.length < 100);
+      data.products.every(p => typeof p.id === 'string' && p.id.length < 100 && typeof p.label === 'string' && p.label.length < 100) &&
+      (data.yearNotes === undefined || (data.yearNotes && typeof data.yearNotes === 'object' && !Array.isArray(data.yearNotes) &&
+        Object.entries(data.yearNotes).every(([y,note]) => /^\d{4}$/.test(y) && Number(y)>=2018 && Number(y)<2200 && typeof note==='string' && note.length<=2000)));
   }
   function loadData(){
     const stored = localStorage.getItem(KEY);
-    if (!stored) return clone(seed);
+    if (!stored) return {...clone(seed),yearNotes:{}};
     try { const data=JSON.parse(stored); if(!isValidState(data)) throw new Error('Format non reconnu');
       // Les produits nouvellement livrés restent accessibles après mise à jour de l'application.
       for(const p of seed.products) if(!data.products.some(x=>x.id===p.id)) data.products.push(clone(p));
       if(!data.archive.length) data.archive=clone(seed.archive);
+      data.yearNotes ||= {}; // Compatibilité des données locales V1.0/V1.1
       return data;
-    } catch(e){ alert('La sauvegarde locale est illisible. Un catalogue vierge sera chargé. Ne supprimez pas votre fichier de sauvegarde Drive.'); return clone(seed); }
+    } catch(e){ alert('La sauvegarde locale est illisible. Un catalogue vierge sera chargé. Ne supprimez pas votre fichier de sauvegarde Drive.'); return {...clone(seed),yearNotes:{}}; }
   }
   function store(){
     try { localStorage.setItem(KEY, JSON.stringify(state)); return true; }
@@ -48,13 +53,13 @@
     $('stats-product').innerHTML=productsSorted().map(p=>optionHtml(p.id,p.label)).join('');
     $('journal-product').value=jp && state.products.some(p=>p.id===jp) ? jp : '';
     $('stats-product').value=sp && state.products.some(p=>p.id===sp) ? sp : 'TOMATES';
-    $('quick-products').innerHTML=['TOMATES','FRAISES','COURGETTES','FIGUES','CITRONS','POIVRONS','CONCOMBRES','PAMPLEMOUSSES'].filter(id=>state.products.some(x=>x.id===id)).map(id=>`<button type="button" data-quick="${escapeHtml(id)}">${escapeHtml(productName(id))}</button>`).join('');
+    $('quick-products').innerHTML=['TOMATES','FRAISES','COURGETTES','FIGUES','CITRONS','ORANGES','CONCOMBRES','PAMPLEMOUSSES','CLEMENTINES'].filter(id=>state.products.some(x=>x.id===id)).map(id=>`<button type="button" data-quick="${escapeHtml(id)}">${escapeHtml(productName(id))}</button>`).join('');
     $('product-count').textContent=`${state.products.length} produits.`;
     $('product-catalog').innerHTML=productsSorted().map(p=>`<span>${escapeHtml(p.label)}</span>`).join('');
     markQuick();
   }
   function markQuick(){document.querySelectorAll('[data-quick]').forEach(b=>b.classList.toggle('is-selected',b.dataset.quick===$('harvest-product').value));}
-  function availableYears(){ const years=new Set(seed.archive.map(r=>r.year)); years.add(2026); years.add(new Date().getFullYear()); state.entries.forEach(x=>years.add(Number(x.date.slice(0,4)))); return [...years].sort((a,b)=>a-b); }
+  function availableYears(){ const years=new Set(seed.archive.map(r=>r.year)); years.add(2026); years.add(new Date().getFullYear()); state.entries.forEach(x=>years.add(Number(x.date.slice(0,4)))); Object.keys(state.yearNotes||{}).forEach(y=>years.add(Number(y))); return [...years].sort((a,b)=>a-b); }
   function populateYears(){
     for(const id of ['journal-year','stats-year']){
       const original=$(id).value || '2026';
@@ -85,9 +90,81 @@
     for(const r of state.entries)add(Number(r.date.slice(0,4)),r.product,r.grams);
     return byYear;
   }
+  // Notes d'une année : conservées dans le même état local et dans les sauvegardes JSON.
+  function renderObservation(year){
+    $('observation-title').textContent=`Observation de l'année ${year}`;
+    $('year-observation').value=state.yearNotes[String(year)]||'';
+    $('observation-status').textContent='Enregistrement automatique · inclus dans la sauvegarde JSON.';
+  }
+  function updateObservation(){
+    const year=String($('stats-year').value);
+    const before=state.yearNotes[year];
+    const note=$('year-observation').value;
+    if(note)state.yearNotes[year]=note;else delete state.yearNotes[year];
+    if(!store()){
+      if(before === undefined)delete state.yearNotes[year];else state.yearNotes[year]=before;
+      $('observation-status').textContent='Enregistrement impossible : vos modifications ne sont pas sauvegardées.';
+    }else{
+      $('observation-status').textContent='✓ Observation enregistrée sur cette tablette · à sauvegarder sur Drive.';
+    }
+  }
+  // Regroupement lundi-dimanche (jour civil) ; les semaines limitrophes
+  // ne comptent que les récoltes appartenant à l'année sélectionnée.
+  function calendarWeeks(year,product){
+    const first=Date.UTC(year,0,1), last=Date.UTC(year,11,31);
+    const monday=first-((new Date(first).getUTCDay()+6)%7)*86400000;
+    const count=Math.floor((last-monday)/WEEK_MS)+1;
+    const weekly=Array.from({length:count},(_,index)=>({index,grams:0,start:monday+index*WEEK_MS}));
+    for(const e of state.entries){
+      if(e.product!==product||Number(e.date.slice(0,4))!==year)continue;
+      const [y,m,d]=e.date.split('-').map(Number);
+      const ms=Date.UTC(y,m-1,d);
+      const index=Math.floor((ms-monday)/WEEK_MS);
+      if(index>=0&&index<count)weekly[index].grams+=e.grams;
+    }
+    return weekly;
+  }
+  function formatWeekDate(ms){
+    return new Date(ms).toLocaleDateString('fr-FR',{day:'numeric',month:'short',timeZone:'UTC'});
+  }
+  function selectWeek(index,weeks){
+    const week=weeks[index];if(!week)return;
+    selectedWeek=index;
+    document.querySelectorAll('[data-week]').forEach(el=>el.classList.toggle('is-selected',Number(el.dataset.week)===index));
+    $('weekly-selection').textContent=`Du ${formatWeekDate(week.start)} au ${formatWeekDate(week.start+6*86400000)} : ${gramsPretty(week.grams)} récoltés`;
+  }
+  function renderWeekly(year,product){
+    $('weekly-title').textContent=`${productName(product)} · production par semaine en ${year}`;
+    const entries=state.entries.filter(e=>e.product===product&&Number(e.date.slice(0,4))===year);
+    const yearTotal=entries.reduce((sum,e)=>sum+e.grams,0);
+    $('weekly-year-total').textContent=year>=2026?pretty(yearTotal):'';
+    if(year<2026){
+      $('weekly-chart').innerHTML='<div class="weekly-empty">Les récoltes de 2018 à 2025 ne sont pas datées dans le fichier Excel. Leur total annuel est conservé, mais une évolution semaine par semaine ne peut pas être calculée.</div>';
+      $('weekly-selection').textContent='';
+      $('weekly-help').hidden=true;
+      return;
+    }
+    $('weekly-help').hidden=false;
+    const weeks=calendarWeeks(year,product);
+    const maxData=Math.max(0,...weeks.map(w=>w.grams));
+    const max=Math.max(1,maxData);
+    // Colonnes fines : 52 ou 53 barres restent visibles sans défilement horizontal.
+    const columns=weeks.map(w=>{
+      const pct=w.grams?Math.max(2,Math.round(w.grams/max*100)):2;
+      const tooltip=`${formatWeekDate(w.start)} – ${formatWeekDate(w.start+6*86400000)} : ${gramsPretty(w.grams)}`;
+      return `<button type="button" class="weekly-column" data-week="${w.index}" aria-label="${escapeHtml(tooltip)}" title="${escapeHtml(tooltip)}"><span class="weekly-bar ${w.grams?'':'weekly-zero'}" style="height:${pct}%"></span></button>`;
+    }).join('');
+    const months=['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+    $('weekly-chart').innerHTML=`<div class="weekly-scale"><span>${escapeHtml(maxData?gramsPretty(maxData):'0 kg')}</span><span>0</span></div><div class="weekly-plot"><div class="weekly-columns" style="--weeks:${weeks.length}">${columns}</div><div class="weekly-months">${months.map(m=>`<span>${m}</span>`).join('')}</div></div>`;
+    // Ouvrir sur la dernière semaine ayant une récolte, ou la première semaine.
+    if(selectedWeek===null||selectedWeek>=weeks.length)selectedWeek=Math.max(0,weeks.findLastIndex(w=>w.grams>0));
+    selectWeek(selectedWeek,weeks);
+  }
   function renderStats(){
     const year=Number($('stats-year').value), product=$('stats-product').value;
     const agg=aggregate();
+    renderObservation(year);
+    renderWeekly(year,product);
     const data=agg.get(year)||new Map();
     const total=[...data.values()].reduce((a,b)=>a+b,0);
     const grandTotal=[...agg.values()].flatMap(x=>[...x.values()]).reduce((a,b)=>a+b,0);
@@ -127,7 +204,7 @@
     if(!confirm(`Supprimer ${gramsPretty(record.grams)} de ${productName(record.product)} du ${record.date.split('-').reverse().join('/')} ?`))return;
     const before=clone(state);state.entries=state.entries.filter(x=>x.id!==id);
     if(!store()){state=before;return;}
-    if(editingId===id)cancelEdit();renderAll();notify('Pesée supprimée. Les statistiques ont été recalculées.');
+    selectedWeek=null;if(editingId===id)cancelEdit();renderAll();notify('Pesée supprimée. Les statistiques ont été recalculées.');
   }
   function saveEntry(event){
     event.preventDefault();const date=$('harvest-date').value, product=$('harvest-product').value;
@@ -142,7 +219,7 @@
     if(editingId){const r=state.entries.find(x=>x.id===editingId);if(r){r.date=date;r.product=product;r.grams=grams;}}
     else state.entries.push({id:`r-${Date.now()}-${Math.random().toString(36).slice(2,9)}`,date,product,grams,createdAt:new Date().toISOString()});
     if(!store()){state=before;return;}
-    const updated=Boolean(editingId);cancelEdit();renderAll();markQuick();
+    const updated=Boolean(editingId);selectedWeek=null;cancelEdit();renderAll();markQuick();
     notify(`${updated?'Pesée corrigée':'Récolte ajoutée'} : ${gramsPretty(grams)} de ${productName(product)}. Total et statistiques actualisés.`);
     $('harvest-weight').focus();
   }
@@ -171,11 +248,11 @@
     try{
       const imported=JSON.parse(await file.text());
       if(!isValidState(imported))throw new Error('Cette sauvegarde n’appartient pas à Suivi Récoltes.');
-      if(!confirm(`Restaurer ${imported.entries.length} pesée(s) quotidiennes et ${imported.archive.length} lignes historiques ?\n\nLes saisies actuelles de cet appareil seront remplacées. Continuez ?`))return;
+      if(!confirm(`Restaurer ${imported.entries.length} pesée(s) quotidiennes, ${imported.archive.length} lignes historiques et ${Object.keys(imported.yearNotes||{}).length} observation(s) annuelle(s) ?\n\nToutes les saisies ET observations actuellement présentes sur cet appareil seront remplacées. Continuez ?`))return;
       for(const p of seed.products) if(!imported.products.some(x=>x.id===p.id)) imported.products.push(clone(p));
-      const previous=state;state={app:'suivi-recoltes',format:1,archive:imported.archive,entries:imported.entries,products:imported.products};
+      const previous=state;state={app:'suivi-recoltes',format:1,archive:imported.archive,entries:imported.entries,products:imported.products,yearNotes:imported.yearNotes||{}};
       if(!store()){state=previous;return;}
-      cancelEdit();populateProducts();renderAll();notify('Sauvegarde restaurée. Historique et statistiques recalculés.');
+      selectedWeek=null;cancelEdit();populateProducts();renderAll();notify('Sauvegarde restaurée. Historique et statistiques recalculés.');
     }catch(e){notify(`Restauration impossible : ${e.message}`,true);}
     finally{event.target.value='';}
   }
@@ -197,7 +274,9 @@
     $('quick-products').addEventListener('click',e=>{const button=e.target.closest('[data-quick]');if(button){$('harvest-product').value=button.dataset.quick;markQuick();$('harvest-weight').focus();}});
     for(const id of ['daily-entries','journal-list']) $(id).addEventListener('click',e=>{const edit=e.target.closest('[data-edit]');const del=e.target.closest('[data-delete]');if(edit)editRecord(edit.dataset.edit);if(del)deleteRecord(del.dataset.delete);});
     $('journal-year').addEventListener('change',renderJournal);$('journal-product').addEventListener('change',renderJournal);
-    $('stats-year').addEventListener('change',renderStats);$('stats-product').addEventListener('change',renderStats);
+    $('stats-year').addEventListener('change',()=>{selectedWeek=null;renderStats();});$('stats-product').addEventListener('change',()=>{selectedWeek=null;renderStats();});
+    $('year-observation').addEventListener('input',updateObservation);
+    $('weekly-chart').addEventListener('click',e=>{const btn=e.target.closest('[data-week]');if(btn)selectWeek(Number(btn.dataset.week),calendarWeeks(Number($('stats-year').value),$('stats-product').value));});
     $('share-backup').addEventListener('click',backupShare);$('download-backup').addEventListener('click',backupDownload);
     $('restore-file').addEventListener('change',restoreFile);$('add-product').addEventListener('click',addProduct);
   }
