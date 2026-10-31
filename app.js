@@ -48,8 +48,8 @@
     $('stats-product').innerHTML=productsSorted().map(p=>optionHtml(p.id,p.label)).join('');
     $('journal-product').value=jp && state.products.some(p=>p.id===jp) ? jp : '';
     $('stats-product').value=sp && state.products.some(p=>p.id===sp) ? sp : 'TOMATES';
-    $('quick-products').innerHTML=['TOMATES','FRAISES','COURGETTES','FIGUES','CITRONS','POIVRONS','PATATE DOUCE'].filter(id=>state.products.some(x=>x.id===id)).map(id=>`<button type="button" data-quick="${escapeHtml(id)}">${escapeHtml(productName(id))}</button>`).join('');
-    $('product-count').textContent=`${state.products.length} produits, dont la patate douce.`;
+    $('quick-products').innerHTML=['TOMATES','FRAISES','COURGETTES','FIGUES','CITRONS','POIVRONS','CONCOMBRES','PAMPLEMOUSSES'].filter(id=>state.products.some(x=>x.id===id)).map(id=>`<button type="button" data-quick="${escapeHtml(id)}">${escapeHtml(productName(id))}</button>`).join('');
+    $('product-count').textContent=`${state.products.length} produits.`;
     $('product-catalog').innerHTML=productsSorted().map(p=>`<span>${escapeHtml(p.label)}</span>`).join('');
     markQuick();
   }
