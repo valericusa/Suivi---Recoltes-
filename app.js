@@ -186,6 +186,8 @@
   function renderAll(){populateYears();renderDay();renderJournal();renderStats();}
   function showView(name){
     activeView=name;
+    $('notice').hidden=true;
+    $('notice').textContent='';
     document.querySelectorAll('.view').forEach(v=>v.hidden=v.id!==`view-${name}`);
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('is-active',b.dataset.view===name));
     if(name==='saisie')renderDay();if(name==='journal')renderJournal();if(name==='stats')renderStats();
@@ -277,7 +279,8 @@
     $('stats-year').addEventListener('change',()=>{selectedWeek=null;renderStats();});$('stats-product').addEventListener('change',()=>{selectedWeek=null;renderStats();});
     $('year-observation').addEventListener('input',updateObservation);
     $('weekly-chart').addEventListener('click',e=>{const btn=e.target.closest('[data-week]');if(btn)selectWeek(Number(btn.dataset.week),calendarWeeks(Number($('stats-year').value),$('stats-product').value));});
-    $('share-backup').addEventListener('click',backupShare);$('download-backup').addEventListener('click',backupDownload);
+    $('share-backup').addEventListener('click',backupShare);
+    $('restore-backup').addEventListener('click',()=>$('restore-file').click());
     $('restore-file').addEventListener('change',restoreFile);$('add-product').addEventListener('click',addProduct);
   }
   function start(){

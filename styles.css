@@ -27,3 +27,7 @@ textarea:focus-visible{outline:3px solid #9cce8c;outline-offset:2px}
 .weekly-panel .footnote{margin-top:10px}
 .weekly-empty{width:100%;padding:20px;background:#f3f7f3;border-radius:10px;color:var(--muted);font-size:14px}
 @media(max-width:760px){.weekly-scale{flex-basis:45px;font-size:10px}.weekly-chart{gap:5px}.weekly-columns{gap:1px}.weekly-months{font-size:8px}.annual-note{padding:12px}}
+
+/* V1.3 : actions de sauvegarde et graphiques regroupés */
+.backup-actions { display: grid; gap: 16px; max-width: 640px; }
+.backup-actions button { margin: 0; width: 100%; }
